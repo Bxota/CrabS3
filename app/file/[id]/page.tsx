@@ -45,34 +45,17 @@ export default function Id() {
         setNotif({ type: "info", message: "Downloading file" + ".".repeat(count % 4) })
       }, 500)
 
-      const downloadResponse = await fetch(`/api/download/${id}/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ password })
-      })
-      if (downloadResponse.status !== 200) {
-        const errorData = await downloadResponse.json()
-        throw new Error(`Error: ${downloadResponse.status} ${errorData.error || downloadResponse.statusText}`)
-      }
-
-      const blob = await downloadResponse.blob()
-      const contentDisposition = downloadResponse.headers.get('Content-Disposition')
-      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/i)
-      const filename = filenameMatch?.[1] || `download-${id}`
-
-      const objectUrl = globalThis.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = objectUrl
-      link.download = filename
+      link.href = `/api/download/${id}/stream?password=${encodeURIComponent(password)}`
+      link.setAttribute('download', fileInfo?.filename || 'download')
+      link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
-      link.remove()
-      globalThis.URL.revokeObjectURL(objectUrl)
+      document.body.removeChild(link)
+
+      clearInterval(interval)
       setNotif({ type: "success", message: "File downloaded successfully!" })
       setTimeout(() => setNotif(null), 3000)
-      clearInterval(interval)
     } catch (err) {
       console.error('Error downloading file:', err)
       setNotif({ type: "error", message: err instanceof Error ? err.message : "Failed to download file" })

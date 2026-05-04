@@ -1,16 +1,15 @@
 import { s3Hot, s3Cold, HOT_BUCKET, COLD_BUCKET } from "@/services/s3.service";
 import { DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { sendDownloadNotificationEmail } from "@/services/mail.service";
 
-const getFileData = async (fileId: string): Promise<string | null> => {
+const getFileData = async (fileId: string) => {
   try {
-    const url = await getSignedUrl(s3Hot, new GetObjectCommand({
+    const url = await s3Hot.send(new GetObjectCommand({
       Bucket: HOT_BUCKET,
       Key: fileId,
-    }), { expiresIn: 3600 });
+    }));
 
     return url;
   } catch (err: any) {
@@ -20,10 +19,10 @@ const getFileData = async (fileId: string): Promise<string | null> => {
   }
 
   try {
-    const url = await getSignedUrl(s3Cold, new GetObjectCommand({
+    const url = await s3Cold.send(new GetObjectCommand({
       Bucket: COLD_BUCKET,
       Key: fileId,
-    }), { expiresIn: 3600 });
+    }));
 
     return url;
   } catch (err: any) {
@@ -35,19 +34,20 @@ const getFileData = async (fileId: string): Promise<string | null> => {
   return null;
 };
 
-export async function POST(
+export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: fileId } = await params;
-    const password = await request.json().then(data => data.password).catch(() => null);
+    const { searchParams } = new URL(request.url)
+    const password = searchParams.get("password") || ""
+    const fileId = (await params).id
 
     let file;
     try {
       file = await prisma.files.findUnique({
         where: { id: fileId },
-        select: { password_hash: true, filename: true, size: true, email_sender: true },
+        select: { password_hash: true, filename: true, size: true, email_sender: true, max_downloads: true },
       });
 
       if (!file) {
@@ -72,29 +72,23 @@ export async function POST(
       throw error;
     }
 
-    const metadata: { filename?: string; contentType?: string; maxDownloads?: string; email_sender?: string } = {
+    const metadata: { filename?: string; contentType?: string; maxDownloads?: string; email_sender?: string, size?: string } = {
       filename: file.filename,
       contentType: "application/octet-stream",
-      maxDownloads: file.size.toString(),
+      maxDownloads: file.max_downloads?.toString(),
       email_sender: file.email_sender || undefined,
+      size: file.size?.toString() || undefined,
     };
 
     if (!metadata) {
       return Response.json({ error: "File metadata not found" }, { status: 404 });
     }
 
-    const urlFile = await getFileData(fileId);
+    const fileResponse = await getFileData(fileId);
 
-    if (!urlFile) {
+    if (!fileResponse) {
       return Response.json({ error: "File not found" }, { status: 404 });
     }
-
-    const fileResponse = await fetch(urlFile);
-    if (!fileResponse.ok) {
-      return Response.json({ error: "Failed to fetch file" }, { status: 500 });
-    }
-
-    const fileBuffer = await fileResponse.arrayBuffer();
 
     if (metadata.maxDownloads) {
       const maxDownloads = Number.parseInt(metadata.maxDownloads);
@@ -124,13 +118,13 @@ export async function POST(
     }).catch(console.error);
     await sendDownloadNotificationEmail(metadata.email_sender || "", fileId);
 
-    return new Response(fileBuffer, {
+    return new Response(fileResponse.Body?.transformToWebStream(), {
       headers: {
         "Content-Type": metadata.contentType || "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${metadata.filename || fileId}"`,
-        "Content-Length": fileBuffer.byteLength.toString(),
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(metadata.filename || "download")}"`,
+        ...(metadata.size && { "Content-Length": metadata.size }),
       },
-    });
+    })
   } catch (error) {
     console.error(error);
     return Response.json(

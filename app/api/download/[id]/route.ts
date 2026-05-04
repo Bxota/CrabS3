@@ -27,7 +27,6 @@ export async function POST(
 
         metadata.filename = file.filename;
         metadata.contentType = "application/octet-stream";
-        metadata.maxDownloads = file.size.toString();
       }
       if (!file) {
         return Response.json({ error: "File not found" }, { status: 404 });
@@ -40,7 +39,6 @@ export async function POST(
     }
 
     return Response.json({
-      status: "ok",
       filename: metadata.filename || fileId,
       contentType: metadata.contentType || "application/octet-stream"
     }, { status: 200 });
