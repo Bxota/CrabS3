@@ -1,10 +1,15 @@
 import { useState, useCallback } from "react";
 
+const MAX_PARALLEL_CHUNKS = 4; // Upload multiple chunks in parallel for better performance
+
 function getChunkSize(fileSize: number): number {
-  if (fileSize < 50 * 1024 * 1024) return 5 * 1024 * 1024; // < 50 Mo - 5 Mo
-  if (fileSize < 200 * 1024 * 1024) return 10 * 1024 * 1024; // < 200 Mo - 10 Mo
-  if (fileSize < 1024 * 1024 * 1024) return 50 * 1024 * 1024; // < 1 Go - 50 Mo
-  return 100 * 1024 * 1024;                                    // > 1 Go - 100 Mo
+  if (fileSize < 10 * 1024 * 1024) return fileSize; // < 10 MB - no chunking
+  if (fileSize < 100 * 1024 * 1024) return 15 * 1024 * 1024; // < 100 MB - 15 MB chunks
+  if (fileSize < 500 * 1024 * 1024) return 50 * 1024 * 1024; // < 500 MB - 50 MB chunks
+  if (fileSize < 1024 * 1024 * 1024) return 50 * 1024 * 1024; // < 1 GB - 50 MB chunks
+  if (fileSize < 3 * 1024 * 1024 * 1024) return 75 * 1024 * 1024; // 1-3 GB - 75 MB chunks
+  if (fileSize < 5 * 1024 * 1024 * 1024) return 100 * 1024 * 1024; // 3-5 GB - 100 MB chunks
+  return 150 * 1024 * 1024; // > 5 GB - 150 MB chunks
 }
 
 interface UploadOptions {
@@ -64,18 +69,32 @@ export function useMultipartUpload() {
         setProgress(overall);
       };
 
-      for (let i = 0; i < totalChunks; i++) {
-        const partNumber = i + 1;
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
+      // Upload chunks in parallel batches for better performance
+      for (let i = 0; i < totalChunks; i += MAX_PARALLEL_CHUNKS) {
+        const batchPromises = [];
 
-        const etag = await uploadChunk(
-          chunk, fileId!, uploadId!, partNumber,
-          (pct) => updateProgress(i, pct),
-        );
+        for (let j = 0; j < MAX_PARALLEL_CHUNKS && i + j < totalChunks; j++) {
+          const chunkIndex = i + j;
+          const partNumber = chunkIndex + 1;
+          const start = chunkIndex * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
 
-        parts.push({ PartNumber: partNumber, ETag: etag });
+          batchPromises.push(
+            uploadChunk(
+              chunk,
+              fileId!,
+              uploadId!,
+              partNumber,
+              (pct) => updateProgress(chunkIndex, pct)
+            ).then(etag => ({ partNumber, etag }))
+          );
+        }
+
+        // Wait for batch to complete before starting next batch
+        const batchResults = await Promise.all(batchPromises);
+        parts.push(...batchResults.sort((a, b) => a.partNumber - b.partNumber)
+          .map(r => ({ PartNumber: r.partNumber, ETag: r.etag })));
       }
 
       const metadata = {
@@ -136,7 +155,7 @@ function uploadChunk(
   retries = 3
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const attempt = (remaining: number) => {
+    const attempt = (remaining: number, delay: number = 500) => {
       const xhr = new XMLHttpRequest();
 
       xhr.upload.addEventListener("progress", (e) => {
@@ -154,8 +173,8 @@ function uploadChunk(
             reject(new Error(`Part ${partNumber}: invalid response`));
           }
         } else if (remaining > 0) {
-          console.warn(`Part ${partNumber} failed (${xhr.status}), retry… (${remaining} left)`);
-          setTimeout(() => attempt(remaining - 1), 1500);
+          console.warn(`Part ${partNumber} failed (${xhr.status}), retry in ${delay}ms… (${remaining} left)`);
+          setTimeout(() => attempt(remaining - 1, Math.min(delay * 2, 5000)), delay);
         } else {
           reject(new Error(`Part ${partNumber} failed after retries: ${xhr.status}`));
         }
@@ -163,11 +182,15 @@ function uploadChunk(
 
       xhr.addEventListener("error", () => {
         if (remaining > 0) {
-          console.warn(`Part ${partNumber} network error, retry… (${remaining} left)`);
-          setTimeout(() => attempt(remaining - 1), 1500);
+          console.warn(`Part ${partNumber} network error, retry in ${delay}ms… (${remaining} left)`);
+          setTimeout(() => attempt(remaining - 1, Math.min(delay * 2, 5000)), delay);
         } else {
           reject(new Error(`Part ${partNumber} network error after retries`));
         }
+      });
+
+      xhr.addEventListener("abort", () => {
+        reject(new Error(`Part ${partNumber} aborted`));
       });
 
       xhr.open("POST", "/api/upload/multipart/part");
