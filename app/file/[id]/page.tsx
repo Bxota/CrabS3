@@ -35,6 +35,10 @@ export default function Id() {
         body: JSON.stringify({ password })
       })
       if (validationResponse.status !== 200) {
+        if (validationResponse.status === 410) {
+          return globalThis.location.reload()
+        }
+
         const errorData = await validationResponse.json()
         throw new Error(`Error: ${validationResponse.status} ${errorData.error || validationResponse.statusText}`)
       }

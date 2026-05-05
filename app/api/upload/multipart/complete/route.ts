@@ -64,7 +64,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    await sendNotificationEmail(metadata.emailSender, fileId);
+    if (metadata.emailSender)
+      await sendNotificationEmail(metadata.emailSender, fileId);
     if (metadata.emailRecipient)
       await sendRecipientNotificationEmail(metadata.emailRecipient, fileId, metadata.emailSender);
   } catch (error) {
