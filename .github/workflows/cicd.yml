@@ -56,3 +56,5 @@ jobs:
             cd ${{ secrets.SERVER_APP_DIR }}
             docker pull ${{ vars.DOCKERHUB_USERNAME }}/crabs3:${{ github.sha }}
             docker compose -f compose.yml up -d --force-recreate
+            sleep 30
+            docker-compose exec web npx prisma migrate deploy

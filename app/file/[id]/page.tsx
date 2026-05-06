@@ -40,9 +40,10 @@ export default function Id() {
         body: JSON.stringify({ password })
       })
       if (validationResponse.status !== 200) {
-        if (validationResponse.status === 410) {
+        if (validationResponse.status === 410)
           return globalThis.location.reload()
-        }
+        if (validationResponse.status === 401 || validationResponse.status === 403)
+          throw new Error("Incorrect password")
 
         const errorData = await validationResponse.json()
         throw new Error(`Error: ${validationResponse.status} ${errorData.error || validationResponse.statusText}`)
@@ -144,7 +145,11 @@ export default function Id() {
                 </div>
 
                 <div>
-                  <button onClick={() => downloadFile(file.id)} disabled={isDownloading} className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg cursor-pointer transition">
+                  <button
+                    onClick={() => downloadFile(file.id)}
+                    disabled={isLoading || !fileInfo || (fileInfo.files.some((f) => f.hasPassword) && !password) || isDownloading}
+                    className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg cursor-pointer transition"
+                  >
                     Download
                   </button>
                 </div>
