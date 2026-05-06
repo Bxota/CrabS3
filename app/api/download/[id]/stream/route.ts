@@ -4,11 +4,12 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { sendDownloadNotificationEmail } from "@/services/mail.service";
 
-const getFileData = async (fileId: string) => {
+const getFileData = async (folderId: string, fileId: string) => {
+  const key = `${folderId}/${fileId}`;
   try {
     const url = await s3Hot.send(new GetObjectCommand({
       Bucket: HOT_BUCKET,
-      Key: fileId,
+      Key: key,
     }));
 
     return url;
@@ -21,7 +22,7 @@ const getFileData = async (fileId: string) => {
   try {
     const url = await s3Cold.send(new GetObjectCommand({
       Bucket: COLD_BUCKET,
-      Key: fileId,
+      Key: key,
     }));
 
     return url;
@@ -41,20 +42,28 @@ export async function GET(
   try {
     const { searchParams } = new URL(request.url)
     const password = searchParams.get("password") || ""
-    const fileId = (await params).id
+    const folderId = (await params).id
+    const fileId = searchParams.get("fileId")
+
+    if (!fileId) {
+      return Response.json({ error: "File ID required" }, { status: 400 });
+    }
 
     let file;
     try {
       file = await prisma.files.findUnique({
         where: { id: fileId },
-        select: { password_hash: true, filename: true, size: true, email_sender: true, max_downloads: true },
+        select: { folder_id: true, password_hash: true, filename: true, size: true, email_sender: true, max_downloads: true },
       });
 
       if (!file) {
         return Response.json({ error: "File not found" }, { status: 404 });
       }
 
-      // Check password if file is protected
+      if (file.folder_id !== folderId) {
+        return Response.json({ error: "File not found" }, { status: 404 });
+      }
+
       if (file.password_hash) {
         if (!password) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -84,7 +93,7 @@ export async function GET(
       return Response.json({ error: "File metadata not found" }, { status: 404 });
     }
 
-    const fileResponse = await getFileData(fileId);
+    const fileResponse = await getFileData(folderId, fileId);
 
     if (!fileResponse) {
       return Response.json({ error: "File not found" }, { status: 404 });
@@ -103,7 +112,7 @@ export async function GET(
           Bucket: HOT_BUCKET,
           Delete: {
             Objects: [
-              { Key: fileId },
+              { Key: `${folderId}/${fileId}` },
             ],
           },
         }));

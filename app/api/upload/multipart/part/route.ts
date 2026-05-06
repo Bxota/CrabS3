@@ -7,11 +7,12 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const fileId = request.headers.get("X-File-Id");
+    const folderId = request.headers.get("X-Folder-Id");
     const uploadId = request.headers.get("X-Upload-Id");
     const partNumber = request.headers.get("X-Part-Number");
     const contentLength = request.headers.get("Content-Length");
 
-    if (!fileId || !uploadId || !partNumber) {
+    if (!fileId || !folderId || !uploadId || !partNumber) {
       return Response.json({ error: "Missing required headers" }, { status: 400 });
     }
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     const response = await s3Hot.send(
       new UploadPartCommand({
         Bucket: HOT_BUCKET,
-        Key: fileId,
+        Key: folderId + "/" + fileId,
         UploadId: uploadId,
         PartNumber: Number.parseInt(partNumber),
         Body: buffer,

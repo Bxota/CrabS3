@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 import { sendNotificationEmail, sendRecipientNotificationEmail } from "@/services/mail.service";
 
 export async function POST(request: Request) {
-  const { fileId, uploadId, parts, metadata } = await request.json();
+  const { fileId, folderId, uploadId, parts, metadata } = await request.json();
   let response;
 
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     response = await s3Hot.send(
       new CompleteMultipartUploadCommand({
         Bucket: HOT_BUCKET,
-        Key: fileId,
+        Key: folderId + "/" + fileId,
         UploadId: uploadId,
         MultipartUpload: { Parts: sortedParts },
       })
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     if (!response.ETag) {
       await s3Hot.send(new AbortMultipartUploadCommand({
         Bucket: HOT_BUCKET,
-        Key: fileId,
+        Key: folderId + "/" + fileId,
         UploadId: uploadId,
       }));
       return Response.json({ error: "Failed to complete upload" }, { status: 500 });
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     try {
       await s3Hot.send(new AbortMultipartUploadCommand({
         Bucket: HOT_BUCKET,
-        Key: fileId,
+        Key: folderId + "/" + fileId,
         UploadId: uploadId,
       }));
     } catch (abortError) {
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   return Response.json({
-    fileId,
+    folderId,
     etag: response.ETag,
     filename: metadata.filename,
   });

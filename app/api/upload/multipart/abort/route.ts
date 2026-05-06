@@ -4,15 +4,15 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { fileId, uploadId } = await request.json();
+    const { fileId, folderId, uploadId } = await request.json();
 
-    if (!fileId || !uploadId) {
-      return Response.json({ error: "Missing fileId or uploadId" }, { status: 400 });
+    if (!fileId || !folderId || !uploadId) {
+      return Response.json({ error: "Missing fileId, folderId, or uploadId" }, { status: 400 });
     }
 
     await s3Hot.send(new AbortMultipartUploadCommand({
       Bucket: HOT_BUCKET,
-      Key: fileId,
+      Key: folderId + "/" + fileId,
       UploadId: uploadId,
     }));
 

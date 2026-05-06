@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 export async function POST(request: Request) {
   try {
     const filename = request.headers.get("X-Filename");
+    const folderId = request.headers.get("X-Folder-Id") || randomUUID();
     const contentType = request.headers.get("Content-Type") || "application/octet-stream";
 
     if (!filename) {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     const { UploadId } = await s3Hot.send(
       new CreateMultipartUploadCommand({
         Bucket: HOT_BUCKET,
-        Key: fileId,
+        Key: folderId + "/" + fileId,
         ContentType: contentType,
       })
     );
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
         filename,
         size: 0,
         content_type: contentType,
+        folder_id: folderId,
       },
     }).catch(console.error);
 

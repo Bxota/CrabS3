@@ -1,6 +1,6 @@
 "use client"
 
-import { faCloudArrowDown } from "@fortawesome/free-solid-svg-icons"
+import { faCloudArrowDown, faKey } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -14,20 +14,25 @@ export default function Id() {
   const [password, setPassword] = useState<string>("")
   const [fileInfo, setFileInfo] = useState<{
     exists: boolean
-    hasPassword: boolean
-    filename: string
-    size: number
+    files: Array<{
+      id: string
+      hasPassword: boolean
+      filename: string
+      size: number
+      maxDownloads: number | null
+      downloadCount: number
+    }>
   } | null>(null)
 
-  const downloadFile = async () => {
+  const downloadFile = async (fileId?: string) => {
     setIsDownloading(true)
     setNotif(null)
 
     try {
-      if (fileInfo?.hasPassword && password)
+      if (fileInfo?.files[0]?.hasPassword && password)
         setNotif({ type: "info", message: "Verifying password..." })
 
-      const validationResponse = await fetch(`/api/download/${id}`, {
+      const validationResponse = await fetch(`/api/download/${id}${fileId ? `?fileId=${fileId}` : ''}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -46,19 +51,36 @@ export default function Id() {
       let count = 0
       const interval = setInterval(() => {
         count += 1
-        setNotif({ type: "info", message: "Downloading file" + ".".repeat(count % 4) })
+        const fileCount = fileId ? 1 : fileInfo?.files.length || 0
+        setNotif({
+          type: "info",
+          message: `Downloading ${fileCount} file${fileCount > 1 ? "s" : ""}` + ".".repeat(count % 4)
+        })
       }, 500)
 
-      const link = document.createElement('a')
-      link.href = `/api/download/${id}/stream?password=${encodeURIComponent(password)}`
-      link.setAttribute('download', fileInfo?.filename || 'download')
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const triggerDownload = (fId: string, filename: string) => {
+        const link = document.createElement('a')
+        link.href = `/api/download/${id}/stream?password=${encodeURIComponent(password)}&fileId=${fId}`
+        link.setAttribute('download', filename)
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
+      if (fileId) {
+        const file = fileInfo?.files.find(f => f.id === fileId)
+        if (file) {
+          triggerDownload(fileId, file.filename)
+        }
+      } else {
+        fileInfo?.files.forEach(file => {
+          triggerDownload(file.id, file.filename)
+        })
+      }
 
       clearInterval(interval)
-      setNotif({ type: "success", message: "File downloaded successfully!" })
+      setNotif({ type: "success", message: "File(s) downloaded successfully!" })
       setTimeout(() => setNotif(null), 3000)
     } catch (err) {
       console.error('Error downloading file:', err)
@@ -72,7 +94,7 @@ export default function Id() {
   useEffect(() => {
     const checkFile = async () => {
       try {
-        const response = await fetch(`/api/checkfile?fileId=${id}`)
+        const response = await fetch(`/api/checkfile?folderId=${id}`)
         if (response.status !== 200) {
           throw new Error(`Error: ${response.status} ${response.statusText}`)
         }
@@ -89,7 +111,7 @@ export default function Id() {
     }
 
     checkFile()
-  }, [id])
+  }, [id, setFileInfo, setIsLoading])
 
   return (
     <div className="flex flex-col items-center justify-center px-16 min-h-screen bg-white font-sans dark:bg-black">
@@ -105,37 +127,53 @@ export default function Id() {
 
       {fileInfo?.exists && (
         <div className="lg:w-150 w-full mt-4 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-900 gap-4">
-          <div className="flex flex-col items-start">
-            <div className="flex gap-4 items-center justify-center">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <FontAwesomeIcon size="2x" icon={faCloudArrowDown} className="text-blue-400" />
+          <div className="flex flex-col items-start gap-2">
+            {fileInfo.files.map((file) => (
+              <div className="w-full flex gap-4 items-center justify-between" key={file.id}>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <FontAwesomeIcon size="2x" icon={faCloudArrowDown} className="text-blue-400" />
+                </div>
+                <div className="flex flex-col gap-1 w-full">
+                  <span className="font-semibold truncate">{file.filename}</span>
+                  <span className="text-xs">
+                    <span>{(file.size > 1024 * 1024 * 1024) ? (file.size / (1024 * 1024 * 1024)).toFixed(2) + " GB" : (file.size > 1024 * 1024) ? (file.size / (1024 * 1024)).toFixed(2) + " MB" : (file.size / 1024).toFixed(2) + " KB"}</span>
+                    {file.maxDownloads !== null &&
+                      <span> | {file.downloadCount} / {file.maxDownloads} downloads</span>
+                    }
+                  </span>
+                </div>
+
+                <div>
+                  <button onClick={() => downloadFile(file.id)} disabled={isDownloading} className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg cursor-pointer transition">
+                    Download
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-1 w-full">
-                <span className="font-semibold truncate">{fileInfo.filename}</span>
-                <span className="text-xs">{(fileInfo.size > 1024 * 1024 * 1024) ? (fileInfo.size / (1024 * 1024 * 1024)).toFixed(2) + " GB" : (fileInfo.size > 1024 * 1024) ? (fileInfo.size / (1024 * 1024)).toFixed(2) + " MB" : (fileInfo.size / 1024).toFixed(2) + " KB"}</span>
-              </div>
-            </div>
-            {fileInfo.hasPassword && (
+            ))}
+            {fileInfo.files.some((f) => f.hasPassword) && (
               <div className="w-full flex flex-wrap items-center justify-between mt-2 gap-1">
-                <p className="font-semibold">This file is password protected.</p>
-                <input
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && downloadFile()}
-                  className="w-full h-8 text-lg outline-none bg-neutral-200 dark:bg-zinc-800 hover:border-blue-500 rounded-md px-2 text-zinc-700 dark:text-zinc-300 transition duration-300"
-                />
+                <label htmlFor="password" className="font-semibold">This file is password protected.</label>
+                <div className='w-full inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
+                  <FontAwesomeIcon icon={faKey} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
+                  <input
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && downloadFile()}
+                    className="outline-none"
+                  />
+                </div>
               </div>
             )}
           </div>
 
           <button
-            onClick={downloadFile}
-            disabled={isLoading || !fileInfo || (fileInfo.hasPassword && !password) || isDownloading}
+            onClick={() => downloadFile()}
+            disabled={isLoading || !fileInfo || (fileInfo.files.some((f) => f.hasPassword) && !password) || isDownloading}
             className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg cursor-pointer transition"
           >
-            Download File
+            Download {fileInfo.files.length > 1 ? "Files" : "File"}
           </button>
           {notif && (
             <div className={`p-4 rounded-lg ${notif.type === "error" ? "bg-red-100 text-red-700" : notif.type === "success" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>

@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.inputClass {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  border: 1.5px solid transparent;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+}
+
+.inputClass:focus,
+.inputClass:active,
+.inputClass:focus-within {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 2px 1.5px #3b82f6aa !important;
+}

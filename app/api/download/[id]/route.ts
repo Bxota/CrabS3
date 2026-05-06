@@ -8,48 +8,94 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: fileId } = await params;
+    const { id: folderId } = await params;
+    const { searchParams } = new URL(request.url);
+    const fileId = searchParams.get("fileId");
     const password = await request.json().then(data => data.password).catch(() => null);
 
-    const metadata: { filename?: string; contentType?: string; maxDownloads?: string } = {};
     try {
-      const file = await prisma.files.findUnique({
-        where: { id: fileId },
-        select: { password_hash: true, filename: true, size: true, max_downloads: true, download_count: true, expires_at: true },
-      });
-      if (file?.password_hash) {
-        if (!password) {
+      if (fileId) {
+        const file = await prisma.files.findUnique({
+          where: { id: fileId },
+          select: { folder_id: true, password_hash: true, filename: true, size: true, max_downloads: true, download_count: true, expires_at: true },
+        });
+
+        if (!file) {
+          return Response.json({ error: "File not found" }, { status: 404 });
+        }
+
+        if (file.folder_id !== folderId) {
+          return Response.json({ error: "File not found" }, { status: 404 });
+        }
+
+        if (file.expires_at! < new Date()) {
+          await s3Hot.send(new DeleteObjectCommand({
+            Bucket: HOT_BUCKET,
+            Key: `${folderId}/${fileId}`,
+          })).catch(console.error);
+          return Response.json({ error: "File has expired" }, { status: 410 });
+        }
+
+        if (file.max_downloads !== null && file.download_count! >= file.max_downloads) {
+          await s3Hot.send(new DeleteObjectCommand({
+            Bucket: HOT_BUCKET,
+            Key: `${folderId}/${fileId}`,
+          })).catch(console.error);
+          return Response.json({ error: "Download limit exceeded" }, { status: 410 });
+        }
+
+        if (file.password_hash) {
+          if (!password) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+          }
+
+          const isPasswordValid = await bcrypt.compare(password, file.password_hash);
+          if (!isPasswordValid) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+          }
+        }
+      } else {
+        const files = await prisma.files.findMany({
+          where: { folder_id: folderId },
+          select: { id: true, password_hash: true, expires_at: true, max_downloads: true, download_count: true },
+        });
+
+        if (files.length === 0) {
+          return Response.json({ error: "Folder not found" }, { status: 404 });
+        }
+
+        const hasPasswordProtected = files.some(f => f.password_hash);
+        if (hasPasswordProtected && !password) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, file.password_hash);
-        if (!isPasswordValid) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        if (hasPasswordProtected) {
+          const firstProtectedFile = files.find(f => f.password_hash) as { password_hash: string };
+          if (firstProtectedFile) {
+            const isPasswordValid = await bcrypt.compare(password, firstProtectedFile.password_hash);
+            if (!isPasswordValid) {
+              return Response.json({ error: "Unauthorized" }, { status: 401 });
+            }
+          }
         }
 
-        metadata.filename = file.filename;
-        metadata.contentType = "application/octet-stream";
-      }
-      if (!file) {
-        return Response.json({ error: "File not found" }, { status: 404 });
-      }
+        for (const file of files) {
+          if (file.expires_at! < new Date()) {
+            await s3Hot.send(new DeleteObjectCommand({
+              Bucket: HOT_BUCKET,
+              Key: `${folderId}/${file.id}`,
+            })).catch(console.error);
+            return Response.json({ error: "One or more files have expired" }, { status: 410 });
+          }
 
-      if (file.expires_at! < new Date()) {
-        await s3Hot.send(new DeleteObjectCommand({
-          Bucket: HOT_BUCKET,
-          Key: fileId,
-        })).catch(console.error);
-
-        return Response.json({ error: "File has expired" }, { status: 410 });
-      }
-
-      if (file.max_downloads !== null && file.download_count! >= file.max_downloads) {
-        await s3Hot.send(new DeleteObjectCommand({
-          Bucket: HOT_BUCKET,
-          Key: fileId,
-        })).catch(console.error);
-
-        return Response.json({ error: "Download limit exceeded" }, { status: 410 });
+          if (file.max_downloads !== null && file.download_count! >= file.max_downloads) {
+            await s3Hot.send(new DeleteObjectCommand({
+              Bucket: HOT_BUCKET,
+              Key: `${folderId}/${file.id}`,
+            })).catch(console.error);
+            return Response.json({ error: "Download limit exceeded for one or more files" }, { status: 410 });
+          }
+        }
       }
 
     } catch (error) {
@@ -59,10 +105,7 @@ export async function POST(
       throw error;
     }
 
-    return Response.json({
-      filename: metadata.filename || fileId,
-      contentType: metadata.contentType || "application/octet-stream"
-    }, { status: 200 });
+    return Response.json({ status: 200 }, { status: 200 });
   } catch (error) {
     console.error(error);
     return Response.json(

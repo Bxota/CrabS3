@@ -18,6 +18,7 @@ model downloads {
 
 model files {
   id             String      @id
+  folder_id      String?
   filename       String
   content_type   String
   size           BigInt
@@ -36,6 +37,7 @@ model files {
 
 model multipart_uploads {
   file_id    String    @id
+  folder_id  String?
   upload_id  String
   filename   String
   chunk_size Int

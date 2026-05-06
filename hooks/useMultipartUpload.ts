@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 const MAX_PARALLEL_CHUNKS = 4; // Upload multiple chunks in parallel for better performance
 
@@ -19,6 +19,7 @@ interface UploadOptions {
   expireAfter?: "1" | "7" | "14" | "21" | "30";
   password?: string;
   filename?: string;
+  folderId?: string;
 }
 
 interface UploadResult {
@@ -31,30 +32,42 @@ export function useMultipartUpload() {
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const activeUploads = useRef(new Map<string, number>());
+  const uploadCount = useRef(0);
 
   const upload = useCallback(async (
     file: File,
     options: UploadOptions = {}
   ): Promise<UploadResult | null> => {
-    setUploading(true);
-    setProgress(0);
-    setError(null);
+    const uploads = activeUploads.current;
+
+    uploadCount.current++;
+
+    if (uploadCount.current === 1) {
+      setUploading(true);
+      setProgress(0);
+      setError(null);
+    }
 
     let uploadId: string | null = null;
     let fileId: string | null = null;
     const filename = options.filename?.trim() || file.name;
+    const folderId = options.folderId || crypto.randomUUID();
 
     try {
       const startRes = await fetch("/api/upload/multipart/start", {
         method: "POST",
         headers: {
           "X-Filename": filename,
+          "X-Folder-Id": folderId,
           "Content-Type": file.type || "application/octet-stream",
         },
       });
 
       if (!startRes.ok) throw new Error("Failed to start upload");
       ({ fileId, uploadId } = await startRes.json());
+
+      uploads.set(fileId!, 0);
 
       const CHUNK_SIZE = getChunkSize(file.size);
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -63,10 +76,15 @@ export function useMultipartUpload() {
       const chunkProgress = new Array(totalChunks).fill(0);
       const updateProgress = (index: number, pct: number) => {
         chunkProgress[index] = pct;
-        const overall = Math.round(
+        const fileProgress = Math.round(
           chunkProgress.reduce((a, b) => a + b, 0) / totalChunks
         );
-        setProgress(overall);
+        uploads.set(fileId!, fileProgress);
+
+        const overallProgress = Math.round(
+          Array.from(uploads.values()).reduce((a, b) => a + b, 0) / uploads.size
+        );
+        setProgress(overallProgress);
       };
 
       // Upload chunks in parallel batches for better performance
@@ -86,7 +104,8 @@ export function useMultipartUpload() {
               fileId!,
               uploadId!,
               partNumber,
-              (pct) => updateProgress(chunkIndex, pct)
+              (pct) => updateProgress(chunkIndex, pct),
+              folderId
             ).then(etag => ({ partNumber, etag }))
           );
         }
@@ -101,6 +120,7 @@ export function useMultipartUpload() {
         filename,
         contentType: file.type || "application/octet-stream",
         size: file.size.toString(),
+        folderId,
         ...(options.maxDownloads ? { maxDownloads: options.maxDownloads.toString() } : { maxDownloads: null }),
         ...(options.emailSender && { emailSender: options.emailSender }),
         ...(options.emailRecipient && { emailRecipient: options.emailRecipient }),
@@ -111,14 +131,20 @@ export function useMultipartUpload() {
       const completeRes = await fetch("/api/upload/multipart/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId, uploadId, parts, metadata }),
+        body: JSON.stringify({ fileId, folderId, uploadId, parts, metadata }),
       });
 
       if (!completeRes.ok) throw new Error("Failed to complete upload");
 
-      setProgress(100);
+      uploads.delete(fileId!);
+      uploadCount.current--;
+
+      if (uploadCount.current === 0) {
+        setProgress(100);
+        setUploading(false);
+      }
+
       const result = await completeRes.json();
-      setUploading(false);
       return result;
 
     } catch (err) {
@@ -126,13 +152,23 @@ export function useMultipartUpload() {
         fetch("/api/upload/multipart/abort", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId, uploadId }),
+          body: JSON.stringify({ fileId, folderId, uploadId }),
         }).catch(console.error);
       }
 
+      if (fileId) {
+        uploads.delete(fileId);
+      }
+
+      uploadCount.current--;
+
       const message = err instanceof Error ? err.message : "Upload failed";
       setError(message);
-      setUploading(false);
+
+      if (uploadCount.current === 0) {
+        setUploading(false);
+      }
+
       return null;
     }
   }, []);
@@ -152,6 +188,7 @@ function uploadChunk(
   uploadId: string,
   partNumber: number,
   onProgress: (pct: number) => void,
+  folderId: string,
   retries = 3
 ): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -195,6 +232,7 @@ function uploadChunk(
 
       xhr.open("POST", "/api/upload/multipart/part");
       xhr.setRequestHeader("X-File-Id", fileId);
+      xhr.setRequestHeader("X-Folder-Id", folderId);
       xhr.setRequestHeader("X-Upload-Id", uploadId);
       xhr.setRequestHeader("X-Part-Number", String(partNumber));
 
