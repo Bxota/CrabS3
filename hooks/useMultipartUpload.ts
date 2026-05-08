@@ -20,6 +20,7 @@ interface UploadOptions {
   password?: string;
   filename?: string;
   folderId?: string;
+  emailMessage?: string;
 }
 
 interface UploadResult {
@@ -126,6 +127,7 @@ export function useMultipartUpload() {
         ...(options.emailRecipient && { emailRecipient: options.emailRecipient }),
         ...(options.expireAfter && { expireAfter: options.expireAfter || "30" }),
         ...(options.password && { password: options.password }),
+        ...(options.emailMessage && { emailMessage: options.emailMessage }),
       };
 
       const completeRes = await fetch("/api/upload/multipart/complete", {

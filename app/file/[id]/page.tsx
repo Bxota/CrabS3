@@ -81,7 +81,7 @@ export default function Id() {
       }
 
       clearInterval(interval)
-      setNotif({ type: "success", message: "File(s) downloaded successfully!" })
+      setNotif({ type: "success", message: `File${(fileId && fileInfo?.files.length === 1) ? '' : 's'} downloaded successfully!` })
       setTimeout(() => setNotif(null), 3000)
     } catch (err) {
       console.error('Error downloading file:', err)
@@ -144,7 +144,7 @@ export default function Id() {
                   </span>
                 </div>
 
-                <div>
+                {fileInfo.files.length > 1 && <div>
                   <button
                     onClick={() => downloadFile(file.id)}
                     disabled={isLoading || !fileInfo || (fileInfo.files.some((f) => f.hasPassword) && !password) || isDownloading}
@@ -152,13 +152,13 @@ export default function Id() {
                   >
                     Download
                   </button>
-                </div>
+                </div>}
               </div>
             ))}
             {fileInfo.files.some((f) => f.hasPassword) && (
               <div className="w-full flex flex-wrap items-center justify-between mt-2 gap-1">
                 <label htmlFor="password" className="font-semibold">This file is password protected.</label>
-                <div className='w-full inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
+                <div className='w-full inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                   <FontAwesomeIcon icon={faKey} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
                   <input
                     type="password"
@@ -166,7 +166,7 @@ export default function Id() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && downloadFile()}
-                    className="outline-none"
+                    className="outline-none w-full"
                   />
                 </div>
               </div>
@@ -186,12 +186,13 @@ export default function Id() {
             </div>
           )}
         </div>
-      )}
+      )
+      }
 
       <div className='mt-4 text-center text-zinc-500 dark:text-zinc-400'>
         <h1 className="text-xl font-bold">CrabS3</h1>
         <p className="text-sm">No cloud. No bill. Just S3 buckets full of crabs. 🦀</p>
       </div>
-    </div>
+    </div >
   )
 }

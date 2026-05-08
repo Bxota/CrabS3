@@ -45,6 +45,7 @@ export async function POST(request: Request) {
         email_sender: metadata.emailSender || null,
         email_recipient: metadata.emailRecipient || null,
         password_hash: metadata.password ? await bcrypt.hash(metadata.password, 10) : null,
+        email_message: metadata.emailMessage || null,
       },
     }).catch(console.error);
   } catch (error) {
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     if (metadata.emailSender)
       await sendNotificationEmail(metadata.emailSender, fileId);
     if (metadata.emailRecipient)
-      await sendRecipientNotificationEmail(metadata.emailRecipient, fileId, metadata.emailSender);
+      await sendRecipientNotificationEmail(metadata.emailRecipient, fileId, metadata.emailSender, metadata.emailMessage);
   } catch (error) {
     console.error("Failed to send notification email:", error instanceof Error ? error.message : String(error));
   }

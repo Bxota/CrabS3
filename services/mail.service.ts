@@ -181,7 +181,7 @@ export async function sendDownloadNotificationEmail(to: string, fileId: string) 
   }
 }
 
-export async function sendRecipientNotificationEmail(to: string, fileId: string, senderEmail?: string) {
+export async function sendRecipientNotificationEmail(to: string, fileId: string, senderEmail?: string, message?: string) {
   if (!to) {
     console.warn(`No recipient email sent for file ${fileId} because no email_recipient is set.`);
     return;
@@ -218,6 +218,7 @@ export async function sendRecipientNotificationEmail(to: string, fileId: string,
                 <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%); border-left: 4px solid #8b5cf6; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
                   <p style="margin: 0; color: #1f2937; font-size: 15px; line-height: 1.6;">
                     ${senderEmail ? `<strong>${senderEmail}</strong> has` : "Someone has"} shared a file with you on CrabS3. Click the button below to download it.
+                    ${message ? `<br><br><em>Message from sender:</em><br>${message}` : ""}
                   </p>
                 </div>
 

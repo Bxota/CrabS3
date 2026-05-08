@@ -30,6 +30,7 @@ model files {
   password_hash  String?
   email_sender   String?
   email_recipient String?
+  email_message  String?
   upload_token   String?     @unique
   download_token String?     @unique
   downloads      downloads[]
