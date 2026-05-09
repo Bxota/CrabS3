@@ -126,7 +126,7 @@ export async function GET(
       },
     }).catch(console.error);
     if (metadata.email_sender)
-      await sendDownloadNotificationEmail(metadata.email_sender || "", fileId);
+      await sendDownloadNotificationEmail(metadata.email_sender || "", folderId);
 
     return new Response(fileResponse.Body?.transformToWebStream(), {
       headers: {

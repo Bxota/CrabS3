@@ -66,9 +66,9 @@ export async function POST(request: Request) {
 
   try {
     if (metadata.emailSender)
-      await sendNotificationEmail(metadata.emailSender, fileId);
+      await sendNotificationEmail(metadata.emailSender, folderId);
     if (metadata.emailRecipient)
-      await sendRecipientNotificationEmail(metadata.emailRecipient, fileId, metadata.emailSender, metadata.emailMessage);
+      await sendRecipientNotificationEmail(metadata.emailRecipient, folderId, metadata.emailSender, metadata.emailMessage);
   } catch (error) {
     console.error("Failed to send notification email:", error instanceof Error ? error.message : String(error));
   }
