@@ -176,23 +176,34 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-white dark:bg-black">
       <main className={`flex flex-col ${fileMeta.length > 0 ? 'pt-10 pb-2' : 'h-screen justify-center'} w-full max-w-7xl items-center px-16`}>
-        <div className="fixed top-5 lg:right-0 mr-5 z-2">
-          {user ? (
-            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700">
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">Logged in as {user.name}</span>
-              <Link href="/dashboard" className="text-sm text-blue-500 hover:underline">Dashboard</Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-red-300 hover:underline cursor-pointer"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700">
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">Loading...</span>
-            </div>
-          )}
+        <div className="fixed top-5 lg:right-5 z-2">
+          <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
+                  </div>
+                </div>
+                <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
+                <div className="flex items-center gap-2">
+                  <Link href="/dashboard" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Dashboard</Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
+            )}
+          </div>
         </div>
 
         {(status || uploading) && (

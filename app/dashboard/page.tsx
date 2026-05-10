@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faShare } from "@fortawesome/free-solid-svg-icons"
+import { useRouter } from "next/navigation"
 
 const DashboardPage = () => {
+  const router = useRouter()
+  const [user, setUser] = useState<{ id: string; email: string, name: string } | null>(null)
   const [dashboardData, setDashboardData] = useState<{
     files: Array<{
       id: string;
@@ -43,6 +46,35 @@ const DashboardPage = () => {
     fetchDashboardData()
   }, [])
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setUser(null)
+      window.location.href = "/auth/login"
+    } catch (error) {
+      console.error("Logout failed:", error)
+    }
+  }
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -74,13 +106,38 @@ const DashboardPage = () => {
   return (
     <div className="flex flex-col flex-1 items-center min-h-screen bg-white dark:bg-black">
       <main className="flex flex-col w-full max-w-7xl items-center px-4 sm:px-16 py-10">
-        <div className="w-full mb-8 flex flex-col items-center">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300">Dashboard</h1>
-            <Link href="/" className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-semibold">
-              Back to Upload
-            </Link>
+        <div className="fixed top-5 right-5 z-50">
+          <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
+                  </div>
+                </div>
+                <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
+                <div className="flex items-center gap-2">
+                  <Link href="/" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Upload</Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
+            )}
           </div>
+        </div>
+
+        <div className="w-full mb-8 flex flex-col items-center">
+          <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300 mb-2">Dashboard</h1>
           <p className="text-zinc-500 dark:text-zinc-400">Manage your uploaded files</p>
         </div>
 
