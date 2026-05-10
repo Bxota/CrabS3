@@ -6,12 +6,18 @@ import {
 import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { sendNotificationEmail, sendRecipientNotificationEmail } from "@/services/mail.service";
+import { getSession } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const { fileId, folderId, uploadId, parts, metadata } = await request.json();
   let response;
 
   try {
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const sortedParts = [...parts].sort((a, b) => a.PartNumber - b.PartNumber);
 
     response = await s3Hot.send(
@@ -46,6 +52,8 @@ export async function POST(request: Request) {
         email_recipient: metadata.emailRecipient || null,
         password_hash: metadata.password ? await bcrypt.hash(metadata.password, 10) : null,
         email_message: metadata.emailMessage || null,
+        storage: "hot",
+        user_id: session.userId,
       },
     }).catch(console.error);
   } catch (error) {

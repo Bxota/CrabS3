@@ -18,6 +18,7 @@ CrabS3 is compatible with any S3 compatible storage backend, making it a versati
 - 📊 **Progress Tracking**: Real-time upload progress tracking for better user experience.
 - 📦 **S3 Compatible**: Works with any S3 compatible storage backend.
 - 🗑️ **Automatic Deletion**: Automatically deletes files after reaching the maximum number of downloads.
+- 👤 **User Dashboard**: Each user has a dashboard to manage their files and view download statistics.
 
 ## Usage
 
@@ -34,31 +35,9 @@ You can upload files through the web interface or use the API endpoints for prog
 
 CrabS3 can be configured using environment variables:
 
-```env
-# AWS S3 Configuration
-# Hot storage configuration
-S3_HOT_ENDPOINT=http://192.168.1.100:9000
-S3_HOT_ACCESS_KEY_ID=changeme
-S3_HOT_SECRET_ACCESS_KEY=changeme
-S3_HOT_BUCKET_NAME=mybucket
-
-# Cold storage configuration
-S3_COLD_ENDPOINT=http://192.168.1.101:9000
-S3_COLD_ACCESS_KEY_ID=changeme
-S3_COLD_SECRET_ACCESS_KEY=changeme
-S3_COLD_BUCKET_NAME=mybucket-cold
-
-S3_REGION=us-east-1
-
-DATABASE_URL="postgresql://postgres:password@localhost:5432/mydatabase"
-BASE_URL=http://localhost:3000
-
-# SMTP Configuration
-SMTP_HOST=your.smtp.host
-SMTP_USER=your_smtp_user
-SMTP_PASS="your_smtp_password"
-SMTP_FROM="CrabS3 Notifications <your_smtp_user>"
-```
+Change the `.env.example` file to set your own configuration and rename it to `.env`.  
+**OR**  
+The project come whith doppler configuration, you can set your environment variables in Doppler and the application will automatically pick them up.
 
 If the cold storage configuration is not provided, CrabS3 will default to using the hot storage for all operations.
 If you want to use the same storage for both hot and cold, simply set the same configuration for both.
@@ -76,6 +55,13 @@ File is automatically copied from hot storage to cold storage with rustfs **repl
 - `DELETE /api/checkfile`: Check if a file with the same hash already exists.
 - `GET /api/download/:id`: Check if a file exists and retrieve its metadata by its ID.
 - `GET /api/download/:id/stream`: Stream the file content for download.
+- `GET /api/auth/check-invite`: Check if an invitation token is valid.
+- `POST /api/auth/invite`: Send an invitation email to a new user (admin only).
+- `POST /api/auth/login`: Authenticate a user and create a session.
+- `POST /api/auth/logout`: Log out the current user and destroy the session.
+- `POST /api/auth/me`: Retrieve the current authenticated user's information.
+- `POST /api/auth/signup`: Create a new user  account and session using an invitation token.
+- `GET /api/dashboard/files`: Retrieve a list of files uploaded by the authenticated user.
 
 ## Documentation
 
