@@ -28,14 +28,15 @@ function SignupForm() {
         } else {
           setTokenValid(false)
           setError(data.error || "Invalid or expired invitation")
+          setTimeout(() => setError(null), 3000)
         }
       })
       .catch(() => setTokenValid(false))
   }, [token])
 
   const handleSubmit = async () => {
-    if (password !== confirm) { setError("Passwords don't match"); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    if (password !== confirm) { setError("Passwords don't match"); setTimeout(() => setError(null), 3000); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); setTimeout(() => setError(null), 3000); return; }
 
     setLoading(true)
     setError(null)
@@ -49,11 +50,12 @@ function SignupForm() {
 
       const data = await res.json()
 
-      if (!res.ok) { setError(data.error || "Signup failed"); return; }
+      if (!res.ok) { setError(data.error || "Signup failed"); setTimeout(() => setError(null), 3000); return; }
 
       router.push("/")
     } catch {
       setError("Network error")
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
     }

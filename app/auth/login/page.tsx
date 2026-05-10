@@ -25,12 +25,14 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setError(data.error || "Login failed")
+        setTimeout(() => setError(null), 3000)
         return
       }
 
       router.push("/")
     } catch {
       setError("Network error")
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
     }
