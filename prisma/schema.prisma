@@ -56,10 +56,36 @@ model upload_tokens {
   used       Boolean?  @default(false)
 }
 
+model invitation {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  token       String    @unique @default(uuid())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  invitedById Int?
+  invitedBy   users?    @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+}
+
+model session {
+  id        String   @id @default(uuid())
+  userId    Int
+  token     String   @unique @default(uuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  isAdmin   Boolean  @default(false)
+}
+
 model users {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-  files    files[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  passwordHash String
+  createdAt   DateTime     @default(now())
+  files       files[]
+  invitesSent invitation[] @relation("InvitedBy")
+  sessions    session[]
+  isAdmin     Boolean      @default(false)
 }

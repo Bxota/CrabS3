@@ -5,10 +5,12 @@ import { faArrowsDownToLine, faAt, faClockRotateLeft, faEnvelope, faFileCode, fa
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Image from 'next/image'
 import Link from 'next/link'
+import router from 'next/router'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 
 export default function Home() {
+  const [user, setUser] = useState<{ id: string; email: string, name: string } | null>(null)
   const [maxDownloads, setMaxDownloads] = useState<number | null>(null)
   const [notifyEmail, setNotifyEmail] = useState<string>("")
   const [emailRecipient, setEmailRecipient] = useState<string>("")
@@ -44,7 +46,6 @@ export default function Home() {
         setFolderId("")
         setPassword("")
         setMaxDownloads(null)
-        setNotifyEmail("")
         setEmailRecipient("")
         setEditingFileIndex(null)
         uploadResultsRef.current = 0
@@ -141,9 +142,70 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+          setNotifyEmail(data.email)
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+        router.push("/auth/login");
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setUser(null)
+      window.location.href = "/auth/login"
+    } catch (error) {
+      console.error("Logout failed:", error)
+    }
+  }
+
   return (
     <div className="flex flex-col flex-1 items-center bg-white dark:bg-black">
       <main className={`flex flex-col ${fileMeta.length > 0 ? 'pt-10 pb-2' : 'h-screen justify-center'} w-full max-w-7xl items-center px-16`}>
+        <div className="fixed top-5 lg:right-5 z-2">
+          <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
+                  </div>
+                </div>
+                <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
+                <div className="flex items-center gap-2">
+                  <Link href="/dashboard" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Dashboard</Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
+            )}
+          </div>
+        </div>
+
         {(status || uploading) && (
           <div className={`lg:w-150 w-full mb-5 ${fileMeta.length > 0 ? '' : 'mt-4'} p-4 flex flex-col rounded-xl ${status?.type === 'success' ? 'bg-green-100 text-green-700' : status?.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
             <div className="flex justify-between items-center">
@@ -179,7 +241,7 @@ export default function Home() {
               {fileMeta.length > 0 ? <div>
                 <div className='flex justify-center'>
                   <FontAwesomeIcon icon={faFileText} size='3x' className='-rotate-45 -mr-9 mt-3 text-zinc-400 dark:text-zinc-700' />
-                  <FontAwesomeIcon icon={faFileImage} size='3x' className='z-100 text-zinc-600 dark:text-zinc-400' />
+                  <FontAwesomeIcon icon={faFileImage} size='3x' className='z-1 text-zinc-600 dark:text-zinc-400' />
                   <FontAwesomeIcon icon={faFileCode} size='3x' className='rotate-45 -ml-9 mt-3 text-zinc-400 dark:text-zinc-700' />
                 </div>
                 <div className='flex flex-col justify-center mt-4'>
@@ -193,8 +255,8 @@ export default function Home() {
         {fileMeta.length > 0 && <div className="lg:w-150 w-full mt-5 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
           <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300">Options</h2>
 
-          <div className="mt-2 grid grid-cols-1 md:grid-cols-4 gap-4 grid-rows-auto">
-            <div className="flex flex-col gap-1 col-span-2">
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 grid-rows-auto">
+            <div className="flex flex-col gap-1 col-span-1 md:col-span-1 lg:col-span-2">
               <label htmlFor="option1" className="text-zinc-700 dark:text-zinc-300">Max downloads</label>
               <div className='inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                 <FontAwesomeIcon icon={faArrowsDownToLine} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
@@ -203,14 +265,14 @@ export default function Home() {
                   id="option1"
                   name="option1"
                   placeholder='e.g. 5'
-                  className="outline-none"
+                  className="outline-none w-full"
                   value={maxDownloads ?? ''}
                   onChange={(e) => setMaxDownloads(e.target.value ? Number.parseInt(e.target.value) : null)}
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-1 col-span-2">
+            <div className="flex flex-col gap-1 col-span-1 lg:col-span-2">
               <label htmlFor="option1" className="text-zinc-700 dark:text-zinc-300">Expire after (days)</label>
               <div className='inputClass group h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                 <FontAwesomeIcon icon={faClockRotateLeft} className='text-zinc-700 dark:text-[#d2d5da] w-3' size='2xs' />
@@ -230,7 +292,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex flex-col col-span-2 gap-1">
+            <div className="flex flex-col col-span-1 lg:col-span-2 gap-1">
               <label htmlFor="emailSender" className="text-zinc-700 dark:text-zinc-300">Notify me by email</label>
               <div className='inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                 <FontAwesomeIcon icon={faAt} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
@@ -240,14 +302,14 @@ export default function Home() {
                   name="emailSender"
                   autoComplete="off"
                   placeholder='my.email@example.com'
-                  className="outline-none bg-transparent"
+                  className="outline-none bg-transparent w-full"
                   value={notifyEmail}
                   onChange={(e) => setNotifyEmail(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="flex flex-col col-span-2 gap-1">
+            <div className="flex flex-col col-span-1 lg:col-span-2 gap-1">
               <label htmlFor="emailRecipient" className="text-zinc-700 dark:text-zinc-300">Email of recipient</label>
               <div className='inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                 <FontAwesomeIcon icon={faPaperPlane} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
@@ -257,14 +319,14 @@ export default function Home() {
                   name="emailRecipient"
                   autoComplete="off"
                   placeholder='recipient@example.com'
-                  className="outline-none"
+                  className="outline-none w-full"
                   value={emailRecipient}
                   onChange={(e) => setEmailRecipient(e.target.value)}
                 />
               </div>
             </div>
 
-            {emailRecipient && <div className="flex flex-col col-span-4 gap-1">
+            {emailRecipient && <div className="flex flex-col col-span-1 md:col-span-2 lg:col-span-4 gap-1">
               <label htmlFor="emailMessage" className="text-zinc-700 dark:text-zinc-300">Message to recipient</label>
               <div className='inputClass w-full! items-start! text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                 <FontAwesomeIcon icon={faEnvelope} className='text-zinc-700 dark:text-[#d2d5da] pt-2' size='2xs' />
@@ -279,7 +341,7 @@ export default function Home() {
               </div>
             </div>}
 
-            <div className='col-span-4 flex flex-wrap justify-between border-t-2 border-zinc-300 dark:border-zinc-700 pt-4 mt-2'>
+            <div className='col-span-1 md:col-span-2 lg:col-span-4 flex flex-wrap justify-between border-t-2 border-zinc-300 dark:border-zinc-700 pt-4 mt-2'>
               <div className='flex flex-col w-full'>
                 <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300">Selected File{fileMeta.length > 1 ? 's' : ''} ({fileMeta.length})</h3>
                 <div className='space-y-3 mt-3'>
@@ -344,13 +406,6 @@ export default function Home() {
 
               <div className='w-full mt-4 flex gap-2'>
                 <button
-                  onClick={() => uploadFile()}
-                  className={`flex-1 bg-blue-500 text-white font-semibold py-2 px-4 cursor-pointer rounded-lg transition ${uploading ? 'opacity-50 cursor-not-allowed!' : 'hover:bg-blue-700'}`}
-                  disabled={uploading || files.length === 0}
-                >
-                  {uploading ? "Uploading..." : `Upload File${fileMeta.length > 1 ? 's' : ''}`}
-                </button>
-                <button
                   onClick={() => {
                     setFileMeta([])
                     setFiles([])
@@ -361,6 +416,13 @@ export default function Home() {
                   disabled={uploading || files.length === 0}
                 >
                   Clear
+                </button>
+                <button
+                  onClick={() => uploadFile()}
+                  className={`flex-1 bg-blue-500 text-white font-semibold py-2 px-4 cursor-pointer rounded-lg transition ${uploading ? 'opacity-50 cursor-not-allowed!' : 'hover:bg-blue-700'}`}
+                  disabled={uploading || files.length === 0}
+                >
+                  {uploading ? "Uploading..." : `Upload File${fileMeta.length > 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>

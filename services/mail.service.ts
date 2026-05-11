@@ -218,7 +218,7 @@ export async function sendRecipientNotificationEmail(to: string, fileId: string,
                 <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%); border-left: 4px solid #8b5cf6; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
                   <p style="margin: 0; color: #1f2937; font-size: 15px; line-height: 1.6;">
                     ${senderEmail ? `<strong>${senderEmail}</strong> has` : "Someone has"} shared a file with you on CrabS3. Click the button below to download it.
-                    ${message ? `<br><br><em>Message from sender:</em><br>${message}` : ""}
+                    ${message ? `<br><br><em style="color: #6b7280;">Message from sender:</em><br><div style="white-space: pre-wrap; color: #1f2937; margin-top: 8px;">${message.replaceAll('\n', '<br>')}</div>` : ""}
                   </p>
                 </div>
 
@@ -256,5 +256,77 @@ export async function sendRecipientNotificationEmail(to: string, fileId: string,
     });
   } catch (error) {
     console.error("Failed to send recipient notification email:", error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function sendInvitationEmail(email: string, token: string) {
+  const from = process.env.SMTP_FROM || "<EMAIL>";
+  const link = `${process.env.BASE_URL}/auth/signup?token=${token}`;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: "You're invited to join CrabS3!",
+      text: `You've been invited to join CrabS3. Click the link to sign up: ${link}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>You're invited to join CrabS3!</title>
+          </head>
+          <body>
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📤</div>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700;">You're invited to join CrabS3!</h1>
+                <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Click the button below to sign up.</p>
+              </div>
+
+              <!-- Content -->
+              <div style="padding: 40px 30px;">
+                <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%); border-left: 4px solid #8b5cf6; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                  <p style="margin: 0; color: #1f2937; font-size: 15px; line-height: 1.6;">
+                    You've been invited to join CrabS3. Click the button below to sign up.
+                  </p>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="margin-bottom: 30px; text-align: center;">
+                  <a href="${link}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                    Join CrabS3
+                  </a>
+                </div>
+
+                <!-- Link fallback -->
+                <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                  <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Sign Up Link:</p>
+                  <p style="margin: 0; word-break: break-all; font-size: 12px; color: #8b5cf6; font-family: 'Courier New', monospace;">
+                    <a href="${link}" style="color: #8b5cf6; text-decoration: none;">
+                      ${link}
+                    </a>
+                  </p>
+                </div>
+
+                <!-- Footer info -->
+                <p style="margin:
+                  Using <strong>CrabS3</strong> to share files securely.
+                  <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280; text-align: center;">
+                    No cloud. No bill. Just S3 buckets full of crabs. 🦀
+                  </p>
+                </p>
+              </div>
+
+              <!-- Bottom accent -->
+              <div style="background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 50%, #8b5cf6 100%); height: 4px;"></div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send invitation email:", error instanceof Error ? error.message : String(error));
   }
 }
