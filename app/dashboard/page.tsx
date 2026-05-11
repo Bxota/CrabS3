@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faShare } from "@fortawesome/free-solid-svg-icons"
-import { useRouter } from "next/navigation"
+import { faShare, faEnvelope, faUser, faLock } from "@fortawesome/free-solid-svg-icons"
 
 const DashboardPage = () => {
-  const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string, name: string } | null>(null)
   const [dashboardData, setDashboardData] = useState<{
     files: Array<{
@@ -27,6 +25,11 @@ const DashboardPage = () => {
     isAdmin: boolean;
   } | null>(null)
   const [emailInvite, setEmailInvite] = useState<string>("")
+  const [editedName, setEditedName] = useState<string>("")
+  const [newPassword, setNewPassword] = useState<string>("")
+  const [confirmPassword, setConfirmPassword] = useState<string>("")
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -53,6 +56,7 @@ const DashboardPage = () => {
         if (res.ok) {
           const data = await res.json();
           setUser(data);
+          setEditedName(data.name);
         } else {
           setUser(null);
         }
@@ -65,11 +69,20 @@ const DashboardPage = () => {
     fetchUser();
   }, [])
 
+  useEffect(() => {
+    if (profileMessage) {
+      const timer = setTimeout(() => {
+        setProfileMessage(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [profileMessage])
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' })
       setUser(null)
-      window.location.href = "/auth/login"
+      globalThis.location.href = "/auth/login"
     } catch (error) {
       console.error("Logout failed:", error)
     }
@@ -103,82 +116,225 @@ const DashboardPage = () => {
     }
   }
 
+  const handleSaveProfile = async () => {
+    setProfileMessage(null)
+    if (!editedName.trim()) {
+      setProfileMessage({ type: 'error', text: 'Name cannot be empty' })
+      return
+    }
+
+    if (user?.name === editedName.trim() && !newPassword) {
+      setProfileMessage({ type: 'error', text: 'No changes to save' })
+      return
+    }
+
+    const updateData: { name: string; password?: string } = {
+      name: editedName.trim(),
+    }
+
+    if (newPassword) {
+      if (newPassword.length < 8) {
+        setProfileMessage({ type: 'error', text: 'Password must be at least 8 characters long' })
+        return
+      }
+      if (newPassword !== confirmPassword) {
+        setProfileMessage({ type: 'error', text: 'Passwords do not match' })
+        return
+      }
+      updateData.password = newPassword
+    }
+
+    setIsLoadingProfile(true)
+    try {
+      const res = await fetch('/api/dashboard/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setUser({ ...user!, name: data.user.name })
+        setEditedName(data.user.name)
+        setNewPassword("")
+        setConfirmPassword("")
+        setProfileMessage({ type: 'success', text: 'Profile updated successfully' })
+      } else {
+        const error = await res.json()
+        setProfileMessage({ type: 'error', text: error.error || 'Error updating profile' })
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setProfileMessage({ type: 'error', text: 'Error updating profile' })
+    } finally {
+      setIsLoadingProfile(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center min-h-screen bg-white dark:bg-black">
-      <main className="flex flex-col w-full max-w-7xl items-center px-4 sm:px-16 py-10">
-        <div className="fixed top-5 right-5 z-50">
-          <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
-            {user ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
-                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
-                  </div>
+    <main className="flex flex-col w-full max-w-7xl items-center px-4 sm:px-16 pt-10">
+      <div className="fixed top-5 right-5 z-50">
+        <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
+          {user ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                  {user.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
-                <div className="flex items-center gap-2">
-                  <Link href="/" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Upload</Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
-                  >
-                    Logout
-                  </button>
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
                 </div>
-              </>
-            ) : (
-              <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
-            )}
+              </div>
+              <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
+              <div className="flex items-center gap-2">
+                <Link href="/" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Upload</Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
+                >
+                  Logout
+                </button>
+              </div>
+            </>
+          ) : (
+            <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
+          )}
+        </div>
+      </div>
+
+      <div className="w-full mb-8 flex flex-col items-center">
+        <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300 mb-2">Dashboard</h1>
+        <p className="text-zinc-500 dark:text-zinc-400">Manage your uploaded files</p>
+      </div>
+
+      {dashboardData?.isAdmin && (
+        <div className="lg:w-150 w-full mb-8 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-gray-50 shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
+          <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-4">Admin Panel</h2>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-2">You have admin privileges. You can invite new users by email</p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col w-full gap-1">
+              <label htmlFor="emailInvite" className="text-zinc-700 dark:text-zinc-300">Email</label>
+              <div className='inputClass h-10 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
+                <FontAwesomeIcon icon={faShare} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
+                <input
+                  type="email"
+                  id="emailInvite"
+                  name="emailInvite"
+                  placeholder='Enter email to invite user'
+                  className="outline-none w-full"
+                  value={emailInvite}
+                  onChange={(e) => setEmailInvite(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <button
+              onClick={sendInvite}
+              disabled={!emailInvite}
+              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              Send Invite
+            </button>
           </div>
         </div>
+      )}
 
-        <div className="w-full mb-8 flex flex-col items-center">
-          <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300 mb-2">Dashboard</h1>
-          <p className="text-zinc-500 dark:text-zinc-400">Manage your uploaded files</p>
-        </div>
+      <div className="lg:w-150 w-full mb-8 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
+        <details>
+          <summary className="text-lg font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer">My Information</summary>
 
-        {dashboardData?.isAdmin && (
-          <div className="lg:w-150 w-full mb-8 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-yellow-50 shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
-            <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-4">Admin Panel</h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-2">You have admin privileges. You can invite new users by email</p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex flex-col w-full gap-1">
-                <label htmlFor="emailInvite" className="text-zinc-700 dark:text-zinc-300">Email</label>
-                <div className='inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
-                  <FontAwesomeIcon icon={faShare} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
-                  <input
-                    type="email"
-                    id="emailInvite"
-                    name="emailInvite"
-                    placeholder='Enter email to invite user'
-                    className="outline-none w-full"
-                    value={emailInvite}
-                    onChange={(e) => setEmailInvite(e.target.value)}
-                  />
-                </div>
+          {profileMessage && (
+            <div className={`mb-4 p-4 rounded-lg text-sm font-medium ${profileMessage.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700'
+              : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700'
+              } mt-4`}>
+              {profileMessage.text}
+            </div>
+          )}
+
+          <div className="space-y-6 mt-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Email</label>
+              <div className="inputClass h-10 text-base bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 rounded-md px-2 text-zinc-500 dark:text-zinc-400 cursor-not-allowed flex items-center gap-2">
+                <FontAwesomeIcon icon={faEnvelope} className='text-zinc-500 dark:text-zinc-400' size='sm' />
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  readOnly
+                  className="outline-none w-full bg-transparent"
+                />
+              </div>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">Email cannot be changed</span>
+            </div>
+
+            <div className="flex flex-col gap-2 -mt-2">
+              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Name</label>
+              <div className="inputClass h-10 text-base bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300 flex items-center gap-2">
+                <FontAwesomeIcon icon={faUser} className='text-zinc-700 dark:text-[#d2d5da]' size='sm' />
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="outline-none w-full bg-transparent"
+                />
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">New password (optional)</label>
+              <div className="inputClass h-10 text-base bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300 flex items-center gap-2">
+                <FontAwesomeIcon icon={faLock} className='text-zinc-700 dark:text-[#d2d5da]' size='sm' />
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Leave empty to keep current password"
+                  className="outline-none w-full bg-transparent"
+                />
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Minimum 8 characters</p>
+            </div>
+
+            {newPassword && (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Confirm password</label>
+                <div className="inputClass h-10 text-base bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faLock} className='text-zinc-700 dark:text-[#d2d5da]' size='sm' />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="outline-none w-full bg-transparent"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
               <button
-                onClick={sendInvite}
-                disabled={!emailInvite}
-                className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleSaveProfile}
+                disabled={isLoadingProfile || (!editedName.trim() || (newPassword && (newPassword.length < 8 || newPassword !== confirmPassword))) || (user?.name === editedName.trim() && !newPassword)}
+                className="flex-1 bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-lg transition duration-300 cursor-pointer disabled:cursor-not-allowed"
               >
-                Send Invite
+                {isLoadingProfile ? 'Saving...' : 'Save changes'}
               </button>
             </div>
           </div>
-        )}
+        </details>
+      </div>
 
-        {(dashboardData && dashboardData.files.length > 0) ? (
-          <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
-            <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-4">Your Files ({dashboardData.files.length})</h2>
-            <div className='space-y-3'>
+      {(dashboardData && dashboardData.files.length > 0) ? (
+        <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
+          <details open>
+            <summary className="text-lg font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer">Your Files ({dashboardData.files.length})</summary>
+
+            <div className='space-y-3 mt-4'>
               {dashboardData.files.map(file => (
                 <div key={file.id} className='flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-blue-500 dark:hover:border-blue-400 transition'>
                   <div className='flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3'>
@@ -252,26 +408,21 @@ const DashboardPage = () => {
                 </div>
               ))}
             </div>
-          </div>
-        ) : dashboardData ? (
-          <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-12 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300 text-center">
-            <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-4">You have not uploaded any files yet.</p>
-            <Link href="/" className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition w-fit mx-auto">
-              Start Uploading
-            </Link>
-          </div>
-        ) : (
-          <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
-            <p className="text-lg text-zinc-600 dark:text-zinc-400 text-center">Loading your files...</p>
-          </div>
-        )}
-
-        <div className='mt-12 mb-4 text-center text-zinc-500 dark:text-zinc-400 z-0'>
-          <h1 className="text-xl font-bold">CrabS3</h1>
-          <p className="text-sm">No cloud. No bill. Just S3 buckets full of crabs. 🦀</p>
+          </details>
         </div>
-      </main>
-    </div>
+      ) : dashboardData ? (
+        <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-12 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300 text-center">
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-4">You have not uploaded any files yet.</p>
+          <Link href="/" className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition w-fit mx-auto">
+            Start Uploading
+          </Link>
+        </div>
+      ) : (
+        <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 text-center">Loading your files...</p>
+        </div>
+      )}
+    </main>
   )
 }
 
