@@ -63,19 +63,12 @@ function SignupForm() {
 
   if (tokenValid === false) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-black px-4">
-        <div className="w-full max-w-md flex flex-col gap-4 text-center">
-          <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Invitation Error</h1>
-          <div className="border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6">
-            <p className="text-zinc-500 dark:text-zinc-400">
-              Please ask the administrator to send you a new invite or contact support if you believe this is an error.
-            </p>
-          </div>
-        </div>
-
-        <div className='mt-4 text-center text-zinc-500 dark:text-zinc-400'>
-          <h1 className="text-xl font-bold">CrabS3</h1>
-          <p className="text-sm">No cloud. No bill. Just S3 buckets full of crabs. 🦀</p>
+      <div className="w-full max-w-md flex flex-col gap-4 text-center">
+        <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Invitation Error</h1>
+        <div className="border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6">
+          <p className="text-zinc-500 dark:text-zinc-400">
+            Please ask the administrator to send you a new invite or contact support if you believe this is an error.
+          </p>
         </div>
       </div>
     )
@@ -83,85 +76,74 @@ function SignupForm() {
 
   if (tokenValid === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-black">
-        <p className="text-zinc-500">Verifying invitation…</p>
-      </div>
+      <p className="text-zinc-500">Verifying invitation…</p>
     )
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-black px-4">
-      <div className="w-full max-w-sm flex flex-col gap-6">
+    <div className="w-full max-w-sm flex flex-col gap-6 my-auto">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Welcome</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          Create your account to start sharing files
+        </p>
+      </div>
 
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Welcome</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Create your account to start sharing files
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-900">
-          <div>
-            <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300">Sign up</h2>
-            {inviteEmail && (
-              <p className="text-sm text-zinc-500 mt-1">
-                Invited as <span className="font-medium text-blue-500">{inviteEmail}</span>
-              </p>
-            )}
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-lg bg-red-100 text-red-400 text-sm">{error}</div>
+      <div className="flex flex-col gap-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-900">
+        <div>
+          <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300">Sign up</h2>
+          {inviteEmail && (
+            <p className="text-sm text-zinc-500 mt-1">
+              Invited as <span className="font-medium text-blue-500">{inviteEmail}</span>
+            </p>
           )}
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-zinc-600 dark:text-zinc-400">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="John Doe"
-              className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-zinc-600 dark:text-zinc-400">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Min. 8 characters"
-              className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-zinc-600 dark:text-zinc-400">Confirm password</label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSubmit()}
-              placeholder="••••••••"
-              className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
-            />
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={loading || !name || !password || !confirm || password !== confirm || password.length < 8}
-            className="h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition cursor-pointer disabled:cursor-not-allowed"
-          >
-            {loading ? "Creating account…" : "Create account"}
-          </button>
         </div>
 
-        <div className='mt-6 mb-4 text-center text-zinc-500 dark:text-zinc-400 z-0'>
-          <h1 className="text-xl font-bold">CrabS3</h1>
-          <p className="text-sm">No cloud. No bill. Just S3 buckets full of crabs. 🦀</p>
+        {error && (
+          <div className="p-3 rounded-lg bg-red-100 text-red-400 text-sm">{error}</div>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-zinc-600 dark:text-zinc-400">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="John Doe"
+            className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
+          />
         </div>
 
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-zinc-600 dark:text-zinc-400">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Min. 8 characters"
+            className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-zinc-600 dark:text-zinc-400">Confirm password</label>
+          <input
+            type="password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            placeholder="••••••••"
+            className="h-9 outline-none bg-zinc-200 dark:bg-zinc-800 rounded-lg px-3 text-zinc-700 dark:text-zinc-300 transition"
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !name || !password || !confirm || password !== confirm || password.length < 8}
+          className="h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition cursor-pointer disabled:cursor-not-allowed"
+        >
+          {loading ? "Creating account…" : "Create account"}
+        </button>
       </div>
     </div>
   )
