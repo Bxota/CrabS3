@@ -43,5 +43,5 @@ export async function GET() {
     file.size = Number(file.size);
   }
 
-  return Response.json({ files, ...(process.env.ADMIN_EMAIL && { isAdmin: process.env.ADMIN_EMAIL === session.email }) });
+  return Response.json({ files, isAdmin: session.isAdmin });
 }

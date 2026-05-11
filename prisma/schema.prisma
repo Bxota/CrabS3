@@ -75,6 +75,7 @@ model session {
   createdAt DateTime @default(now())
   user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   email     String
+  isAdmin   Boolean  @default(false)
 }
 
 model users {
@@ -86,4 +87,5 @@ model users {
   files       files[]
   invitesSent invitation[] @relation("InvitedBy")
   sessions    session[]
+  isAdmin     Boolean      @default(false)
 }

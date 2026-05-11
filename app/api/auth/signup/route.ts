@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const passwordHash = await hashPassword(password);
 
   const user = await prisma.users.create({
-    data: { email: invitation.email, name, passwordHash },
+    data: { email: invitation.email, name, passwordHash, isAdmin: false },
   });
 
   await prisma.invitation.update({
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     data: { usedAt: new Date() },
   });
 
-  await createSession(user.id, invitation.email);
+  await createSession(user.id, invitation.email, false);
 
   return Response.json({ success: true });
 }

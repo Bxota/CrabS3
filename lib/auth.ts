@@ -10,11 +10,11 @@ export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export async function createSession(userId: number, email: string) {
+export async function createSession(userId: number, email: string, isAdmin: boolean) {
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
 
   const session = await prisma.session.create({
-    data: { userId, expiresAt, email },
+    data: { userId, expiresAt, email, isAdmin },
   });
 
   const cookieStore = await cookies();
