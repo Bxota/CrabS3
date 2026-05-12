@@ -76,7 +76,7 @@ function SignupForm() {
 
   if (tokenValid === null) {
     return (
-      <p className="text-zinc-500">Verifying invitation…</p>
+      <p className="text-zinc-500 dark:text-zinc-400 my-auto">Verifying invitation…</p>
     )
   }
 

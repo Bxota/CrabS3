@@ -1,5 +1,6 @@
 "use client"
 
+import { Menu } from '@/components'
 import { useMultipartUpload } from '@/hooks/useMultipartUpload'
 import { faArrowsDownToLine, faAt, faClockRotateLeft, faEnvelope, faFileCode, faFileImage, faFileText, faKey, faPaperPlane, faPen } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -10,7 +11,7 @@ import { useCallback, useState, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 
 export default function Home() {
-  const [user, setUser] = useState<{ id: string; email: string, name: string } | null>(null)
+  const [user, setUser] = useState<{ id: string; email: string, name: string, isAdmin: boolean } | null>(null)
   const [maxDownloads, setMaxDownloads] = useState<number | null>(null)
   const [notifyEmail, setNotifyEmail] = useState<string>("")
   const [emailRecipient, setEmailRecipient] = useState<string>("")
@@ -101,7 +102,7 @@ export default function Home() {
           password: password || undefined,
           filename: fileMeta[index].name,
           folderId,
-          emailMessage: emailMessage || undefined,
+          emailMessage: emailMessage ? emailMessage.replaceAll('\n', String.raw`\n`) : undefined,
         })
       ))
 
@@ -173,47 +174,9 @@ export default function Home() {
     }
   }, [status?.type])
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      setUser(null)
-      globalThis.location.href = "/auth/login"
-    } catch (error) {
-      console.error("Logout failed:", error)
-    }
-  }
-
   return (
     <main className={`flex flex-col ${fileMeta.length > 0 ? 'pt-10 pb-2' : 'my-auto justify-center'} w-full max-w-7xl items-center px-16`}>
-      <div className="fixed top-5 lg:right-5 z-2">
-        <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg shadow shadow-zinc-200 dark:shadow-zinc-700 border border-zinc-200 dark:border-zinc-700">
-          {user ? (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Logged in as</span>
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
-                </div>
-              </div>
-              <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-600"></div>
-              <div className="flex items-center gap-2">
-                <Link href="/dashboard" className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition">Dashboard</Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition"
-                >
-                  Logout
-                </button>
-              </div>
-            </>
-          ) : (
-            <span className="text-sm text-zinc-500 dark:text-zinc-400 animate-pulse">Loading...</span>
-          )}
-        </div>
-      </div>
+      <Menu user={user} />
 
       {(status || uploading) && (
         <div className={`lg:w-150 w-full mb-5 ${fileMeta.length > 0 ? '' : 'mt-4'} p-4 flex flex-col rounded-xl ${status?.type === 'success' ? 'bg-green-100 text-green-700' : status?.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -233,7 +196,7 @@ export default function Home() {
           )}
           {status?.data && (
             <div className='bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mt-2 text-sm overflow-x-auto break-all'>
-              <a href={status.data} target='_blank' rel='noreferrer' className='text-blue-600 dark:text-blue-400 hover:underline'>
+              <a href={status.data} target='_blank' rel='noreferrer' className='text-green-600 dark:text-green-600 hover:underline'>
                 {status.data}
               </a>
             </div>
