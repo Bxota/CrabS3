@@ -287,7 +287,7 @@ const DashboardPage = () => {
                     </div>
                   )}
 
-                  <div className='flex gap-2 pt-2 flex-wrap'>
+                  <div className='flex gap-2 pt-2 flex-wrap justify-end'>
                     <button
                       onClick={() => {
                         const link = `${globalThis.location.origin}/file/${file.folder_id}`
@@ -301,7 +301,7 @@ const DashboardPage = () => {
                           document.body.removeChild(textarea)
                         })
                       }}
-                      className='bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition'
+                      className='bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer py-2 px-4 rounded-lg transition'
                     >
                       Copy Link
                     </button>
