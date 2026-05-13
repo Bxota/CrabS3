@@ -70,14 +70,6 @@ const Menu = ({ user }: MenuProps) => {
                       <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{user.name}</span>
                     </div>
                   </div>
-                  {globalThis.location.pathname !== '/dashboard' && (
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>)}
                   {globalThis.location.pathname !== '/' && (
                     <Link
                       href="/"
@@ -87,7 +79,15 @@ const Menu = ({ user }: MenuProps) => {
                       Upload Files
                     </Link>
                   )}
-                  {user.isAdmin && (
+                  {globalThis.location.pathname !== '/dashboard' && (
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>)}
+                  {user.isAdmin && globalThis.location.pathname !== '/admin' && (
                     <Link
                       href="/admin"
                       className="block px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition"

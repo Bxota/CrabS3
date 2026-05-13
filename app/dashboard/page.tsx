@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faShare, faEnvelope, faUser, faLock } from "@fortawesome/free-solid-svg-icons"
+import { faEnvelope, faUser, faLock } from "@fortawesome/free-solid-svg-icons"
 import { Menu } from "@/components"
 
 const DashboardPage = () => {
@@ -25,7 +25,6 @@ const DashboardPage = () => {
     }>,
     isAdmin: boolean;
   } | null>(null)
-  const [emailInvite, setEmailInvite] = useState<string>("")
   const [editedName, setEditedName] = useState<string>("")
   const [newPassword, setNewPassword] = useState<string>("")
   const [confirmPassword, setConfirmPassword] = useState<string>("")
@@ -85,26 +84,6 @@ const DashboardPage = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-  }
-
-  const sendInvite = async () => {
-    if (!emailInvite) return
-    try {
-      const response = await fetch('/api/auth/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailInvite }),
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send invite')
-      }
-      alert('Invitation sent successfully!')
-      setEmailInvite("")
-    } catch (error: any) {
-      console.error('Error sending invite:', error)
-      alert(`Error: ${error.message}`)
-    }
   }
 
   const handleSaveProfile = async () => {
@@ -170,40 +149,6 @@ const DashboardPage = () => {
         <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300 mb-2">Dashboard</h1>
         <p className="text-zinc-500 dark:text-zinc-400">Manage your uploaded files</p>
       </div>
-
-      {dashboardData?.isAdmin && (
-        <div className="lg:w-150 w-full mb-8 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-gray-50 shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
-          <h2 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-4">Admin Panel</h2>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-2">You have admin privileges. You can invite new users by email</p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex flex-col w-full gap-1">
-              <label htmlFor="emailInvite" className="text-zinc-700 dark:text-zinc-300">Email</label>
-              <div className='inputClass h-10 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
-                <FontAwesomeIcon icon={faShare} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
-                <input
-                  type="email"
-                  id="emailInvite"
-                  name="emailInvite"
-                  placeholder='Enter email to invite user'
-                  className="outline-none w-full"
-                  value={emailInvite}
-                  onChange={(e) => setEmailInvite(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <button
-              onClick={sendInvite}
-              disabled={!emailInvite}
-              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Send Invite
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="lg:w-150 w-full mb-8 flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
         <details>
@@ -295,7 +240,7 @@ const DashboardPage = () => {
       {(dashboardData && dashboardData.files.length > 0) ? (
         <div className="lg:w-150 w-full flex flex-col border-zinc-200 dark:border-zinc-700 border-2 rounded-2xl p-6 bg-white shadow-zinc-100 shadow dark:shadow-zinc-600 dark:bg-zinc-900 transition duration-300">
           <details open>
-            <summary className="text-lg font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer">Your Files ({dashboardData.files.length})</summary>
+            <summary className="text-lg font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer">Your File{dashboardData.files.length > 1 ? 's' : ''} ({dashboardData.files.length})</summary>
 
             <div className='space-y-3 mt-4'>
               {dashboardData.files.map(file => (

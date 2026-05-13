@@ -9,6 +9,7 @@ const PUBLIC_ROUTES = [
   "/api/auth/logout",
   "/api/download/",
   "/api/checkfile",
+  "/api/auth/check-invite",
 ];
 
 export function proxy(request: NextRequest) {
