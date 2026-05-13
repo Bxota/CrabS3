@@ -115,7 +115,7 @@ export default function Id() {
   }, [id, setFileInfo, setIsLoading])
 
   return (
-    <div className="flex flex-col items-center justify-center px-16 min-h-screen bg-white font-sans dark:bg-black">
+    <main className="my-auto">
       <h1 className="text-2xl font-bold text-center">
         Download File
       </h1>
@@ -158,7 +158,7 @@ export default function Id() {
             {fileInfo.files.some((f) => f.hasPassword) && (
               <div className="w-full flex flex-wrap items-center justify-between mt-2 gap-1">
                 <label htmlFor="password" className="font-semibold">This file is password protected.</label>
-                <div className='w-full inputClass h-8 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
+                <div className='w-full inputClass h-10 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
                   <FontAwesomeIcon icon={faKey} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
                   <input
                     type="password"
@@ -186,13 +186,13 @@ export default function Id() {
             </div>
           )}
         </div>
-      )
-      }
+      )}
 
-      <div className='mt-4 text-center text-zinc-500 dark:text-zinc-400'>
-        <h1 className="text-xl font-bold">CrabS3</h1>
-        <p className="text-sm">No cloud. No bill. Just S3 buckets full of crabs. 🦀</p>
-      </div>
-    </div >
+      {isLoading && (
+        <div className="mt-4 p-6 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl bg-zinc-50 dark:bg-zinc-900">
+          <p className="text-zinc-500 dark:text-zinc-400">Loading file information...</p>
+        </div>
+      )}
+    </main>
   )
 }
