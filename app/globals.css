@@ -40,3 +40,35 @@ body {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 2px 1.5px #3b82f6aa !important;
 }
+
+.inputShadow {
+  animation: displayShadow .38s ease-out forwards;
+}
+
+@keyframes displayShadow {
+  from {
+    box-shadow: 0 0 0px 0px var(--shadow-color);
+  }
+
+  to {
+    box-shadow: 0 0 100px 10px var(--shadow-color);
+  }
+}
+
+.striped-bg {
+  background: repeating-linear-gradient(45deg,
+      #fafafa,
+      #fafafa 15px,
+      #f1f1f1 15px,
+      #f1f1f1 30px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .striped-bg {
+    background: repeating-linear-gradient(45deg,
+        #18181b,
+        #18181b 15px,
+        #27272a 15px,
+        #27272a 30px) !important;
+  }
+}

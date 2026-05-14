@@ -159,7 +159,7 @@ export default function Id() {
               <div className="w-full flex flex-wrap items-center justify-between mt-2 gap-1">
                 <label htmlFor="password" className="font-semibold">This file is password protected.</label>
                 <div className='w-full inputClass h-10 text-lg bg-[#fafafa] dark:bg-[#1c1d21] hover:bg-[#f4f4f6] dark:hover:bg-[#25272c] border-[#e9ebed]! dark:border-[#383a42]! rounded-md px-2 text-zinc-700! dark:text-[#d2d5da]! transition duration-300'>
-                  <FontAwesomeIcon icon={faKey} className='text-zinc-700 dark:text-[#d2d5da]' size='2xs' />
+                  <FontAwesomeIcon icon={faKey} className='text-zinc-700 dark:text-[#d2d5da]' size='xs' />
                   <input
                     type="password"
                     placeholder="Enter password"
