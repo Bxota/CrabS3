@@ -38,6 +38,18 @@ model files {
   user_id        Int?
 }
 
+model secrets {
+  id             String    @id
+  content        String
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  expires_at     DateTime? @db.Timestamp(6)
+  max_views      Int
+  view_count     Int?      @default(0)
+  password_hash  String?
+  user_id        Int?
+  user           users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
 model multipart_uploads {
   file_id    String    @id
   folder_id  String?
@@ -85,6 +97,7 @@ model users {
   passwordHash String
   createdAt   DateTime     @default(now())
   files       files[]
+  secrets     secrets[]
   invitesSent invitation[] @relation("InvitedBy")
   sessions    session[]
   isAdmin     Boolean      @default(false)

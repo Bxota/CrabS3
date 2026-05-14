@@ -12,6 +12,7 @@ CrabS3 is compatible with any S3 compatible storage backend, making it a versati
 
 - 🚀 **Fast**: Built with RustFS and optimized for performance.
 - 🔥 **Hot and Cold Storage**: Supports both hot and cold storage options for efficient file management.
+- 🗝️ **Secret Sharing**: Allows users to share secrets securely with password protection and time-limited access.
 - 📁 **Multipart Uploads**: Supports large file uploads with resumable multipart uploads.
 - 🔒 **Secure**: Generate secure, time-limited links for sharing files
 - 📧 **Email Notifications**: Notify users when their files are uploaded or downloaded.
@@ -22,9 +23,10 @@ CrabS3 is compatible with any S3 compatible storage backend, making it a versati
 
 ## Usage
 
-To run CrabS3, you can use the provided Docker Compose configuration. Make sure you have Docker and Docker Compose installed on your system. Then, simply run the following command in the root directory of the project:
+To run CrabS3, you can use the provided [Docker Compose configuration](./compose.yml). Make sure you have Docker and Docker Compose installed on your system. Then, simply run the following command in the root directory of the project:
 
 ```bash
+docker pull doctorpok/crabs3:latest
 docker-compose up -d
 ```
 
@@ -42,26 +44,32 @@ The project come whith doppler configuration, you can set your environment varia
 If the cold storage configuration is not provided, CrabS3 will default to using the hot storage for all operations.
 If you want to use the same storage for both hot and cold, simply set the same configuration for both.
 
-It use 3 buckets: one for hot storage, one for cold storage and one for metadata. The metadata bucket is used to store information about the files, such as the number of downloads remaining.
+It use 2 buckets: one for hot storage and one for cold storage.
+Also use postgres for metadata storage, user management and secret sharing.
 
-File is automatically copied from hot storage to cold storage with rustfs **replication feature**, so you don't have to worry about it.
+File is automatically copied from hot storage to cold storage with rustfs [replication feature](https://docs.rustfs.com/features/replication/), so you don't have to worry about it.
 
 ## API
+
+This project use a middleware to handle API requests, the endpoints are as follows:
 
 - `POST /api/upload/multipart/start`: Initiate a multipart upload session.
 - `POST /api/upload/multipart/part`: Upload a single part of the file.
 - `POST /api/upload/multipart/complete`: Complete the multipart upload with metadata.
 - `POST /api/upload/multipart/abort`: Abort an ongoing multipart upload.
-- `DELETE /api/checkfile`: Check if a file with the same hash already exists.
-- `GET /api/download/:id`: Check if a file exists and retrieve its metadata by its ID.
+- `GET /api/checkfile`: Check if a file with the same hash already exists.
+- `POST /api/download/:id`: Check if a file exists and retrieve its metadata by its ID.
 - `GET /api/download/:id/stream`: Stream the file content for download.
 - `GET /api/auth/check-invite`: Check if an invitation token is valid.
 - `POST /api/auth/invite`: Send an invitation email to a new user (admin only).
 - `POST /api/auth/login`: Authenticate a user and create a session.
 - `POST /api/auth/logout`: Log out the current user and destroy the session.
-- `POST /api/auth/me`: Retrieve the current authenticated user's information.
-- `POST /api/auth/signup`: Create a new user  account and session using an invitation token.
+- `GET /api/auth/me`: Retrieve the current authenticated user's information.
+- `POST /api/auth/signup`: Create a new user account and session using an invitation token.
 - `GET /api/dashboard/files`: Retrieve a list of files uploaded by the authenticated user.
+- `POST /api/secret/upload`: Upload a secret and obtain a sharing link.
+- `POST /api/secret/check`: Check if a secret exists and if it requires a password.
+- `POST /api/secret/get`: Retrieve the content of a secret by providing the password if necessary.
 
 ## Documentation
 
