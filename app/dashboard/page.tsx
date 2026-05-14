@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEnvelope, faUser, faLock } from "@fortawesome/free-solid-svg-icons"
-import { Menu } from "@/components"
 
 const DashboardPage = () => {
   const [user, setUser] = useState<{ id: string; email: string, name: string, isAdmin: boolean } | null>(null)
@@ -143,8 +142,6 @@ const DashboardPage = () => {
 
   return (
     <main className="flex flex-col w-full max-w-7xl items-center px-4 sm:px-16 pt-10">
-      <Menu user={user} />
-
       <div className="w-full mb-8 flex flex-col items-center">
         <h1 className="text-3xl font-bold text-zinc-700 dark:text-zinc-300 mb-2">Dashboard</h1>
         <p className="text-zinc-500 dark:text-zinc-400">Manage your uploaded files</p>

@@ -1,18 +1,23 @@
+"use client"
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-interface MenuProps {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    isAdmin: boolean;
-  } | null;
-}
-
-const Menu = ({ user }: MenuProps) => {
+const Menu = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const response = await fetch("/api/auth/me")
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData)
+      }
+    }
+    fetchUser()
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,7 +50,7 @@ const Menu = ({ user }: MenuProps) => {
   )
 
   return (
-    <div className="fixed top-5 lg:right-5 z-50" ref={userMenuRef}>
+    <div className="fixed top-5 right-5 z-50" ref={userMenuRef}>
       <div className="relative">
         <div className="flex items-center gap-3 shadow-lg shadow-zinc-300 dark:shadow-zinc-900 rounded-full p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600">
           {user ? (
