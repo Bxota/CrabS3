@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 const Menu = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<{ name: string, isAdmin: boolean } | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
