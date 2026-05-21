@@ -31,11 +31,13 @@ export async function createCommunication(userId: number, type: WebHookType, url
     where: { user_id_type: { user_id: userId, type } },
     update: {
       url,
+      active: true,
     },
     create: {
       type,
       url,
       user_id: userId,
+      active: true,
     }
   })
 }
