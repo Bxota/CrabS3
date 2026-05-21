@@ -29,7 +29,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/")
+      window.location.href = "/"
     } catch {
       setError("Network error")
       setTimeout(() => setError(null), 3000)
@@ -43,7 +43,7 @@ export default function LoginPage() {
       .then(res => res.ok ? res.json() : null)
       .then(user => {
         if (user) {
-          router.push("/")
+          window.location.href = "/"
         }
       })
   }, [router])
