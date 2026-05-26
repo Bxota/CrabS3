@@ -1,3 +1,17 @@
+import prisma from "@/lib/prisma";
+
 export async function GET() {
-  return new Response("OK", { status: 200 });
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
+    return Response.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    return Response.json(
+      { status: "error", timestamp: new Date().toISOString() },
+      { status: 503 }
+    );
+  }
 }
