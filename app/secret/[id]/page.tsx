@@ -80,7 +80,7 @@ const SecretPage = () => {
   }
 
   return (
-    <div className="my-auto lg:-ml-69">
+    <div className="my-auto">
       <h1 className="text-2xl font-bold text-center">Secret {requiresPassword ? "(Password Required)" : ""}</h1>
       {notif && (
         <PopupStatus
@@ -90,7 +90,7 @@ const SecretPage = () => {
       )}
 
       {!isLoading && requiresPassword === null && (
-        <div className="mt-4 p-6 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl bg-zinc-50 dark:bg-zinc-900">
+        <div className="p-6 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl bg-zinc-50 dark:bg-zinc-900">
           <p className="text-center text-zinc-500 dark:text-zinc-400">Secret not found. It may have been deleted, expired, or the link is incorrect.</p>
         </div>
       )}
