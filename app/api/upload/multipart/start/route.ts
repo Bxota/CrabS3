@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         Bucket: HOT_BUCKET,
         Key: folderId + "/" + fileId,
         ContentType: contentType,
+        StorageClass: "EXPRESS_ONEZONE"
       })
     );
 
